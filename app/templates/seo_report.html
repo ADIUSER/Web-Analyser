@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block title %}SEO report · Scan #{{ scan.id }}{% endblock %}
+{% block content %}
+<div class="page-header mb-4"><div><a class="back-link" href="{{ url_for('main.scan_results', scan_id=scan.id) }}">← Back to overview</a><div class="eyebrow mt-3">SCAN #{{ scan.id }}</div><h1 class="h2 fw-bold mt-1">SEO analysis report</h1><div class="text-secondary url-wrap">{{ scan.normalized_start_url }}</div></div><a class="btn btn-primary" href="{{ url_for('main.export_csv', scan_id=scan.id, kind='seo') }}">Export SEO CSV</a></div>
+<div class="d-flex flex-wrap gap-2 mb-4 report-tabs"><a href="{{ url_for('main.scan_results', scan_id=scan.id) }}">Overview</a><a class="active" href="{{ url_for('main.seo_report', scan_id=scan.id) }}">SEO report</a><a href="{{ url_for('main.link_report', scan_id=scan.id) }}">Link analysis</a></div>
+<div class="row g-3 mb-4">
+{% set seo_items = [('Pages missing title', seo.pages_missing_title), ('Pages missing description', seo.pages_missing_description), ('Pages missing H1', seo.pages_missing_h1), ('Duplicate titles', seo.duplicate_titles), ('Duplicate descriptions', seo.duplicate_descriptions)] %}
+{% for label, value in seo_items %}<div class="col-6 col-lg"><div class="metric-card compact"><div class="metric-label">{{ label }}</div><div class="metric-value">{{ value }}</div></div></div>{% endfor %}
+</div>
+<div class="alert alert-info">These checks are informational quality signals. They do not guarantee or predict search-engine rankings.</div>
+<div class="surface-card p-3 p-lg-4"><div class="d-flex flex-column flex-md-row justify-content-between gap-3 mb-3"><div><h2 class="h5 fw-bold">Per-page SEO details</h2><p class="small text-secondary mb-0">Missing metadata and advisory findings are shown for each analyzed page.</p></div><input type="search" class="form-control form-control-sm table-search" placeholder="Search pages…" data-table-search="seoTable" aria-label="Search SEO report"></div>
+<div class="table-responsive"><table id="seoTable" class="table table-hover align-middle data-table" data-enhance-table><thead><tr><th data-sort-type="text">URL</th><th data-sort-type="text">Title</th><th data-sort-type="number">Title chars</th><th data-sort-type="number">Description chars</th><th data-sort-type="number">H1</th><th>Findings</th></tr></thead><tbody>
+{% for page in pages %}<tr><td class="url-cell"><a href="{{ url_for('main.page_details', page_id=page.id) }}">{{ page.requested_url }}</a></td><td>{{ page.page_title or '—' }}</td><td>{{ page.title_length }}</td><td>{{ page.meta_description_length }}</td><td>{{ page.h1_count }}</td><td>{% for finding in page.seo_findings or [] %}<span class="finding-chip">{{ finding }}</span>{% else %}<span class="text-success small">No basic findings</span>{% endfor %}{% if page.error_message %}<span class="finding-chip finding-chip-error">{{ page.error_message }}</span>{% endif %}</td></tr>{% else %}<tr><td colspan="6" class="text-center text-secondary py-5">No pages available.</td></tr>{% endfor %}
+</tbody></table></div><div class="table-footer" data-table-footer="seoTable"></div></div>
+{% endblock %}

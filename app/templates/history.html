@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% block title %}Scan history{% endblock %}
+{% block content %}
+<div class="page-header mb-4"><div><div class="eyebrow">YOUR LOCAL DATABASE</div><h1 class="h2 fw-bold mt-1">Scan history</h1><p class="text-secondary mb-0">Previously completed and failed website scans saved in SQLite on this machine.</p></div><a class="btn btn-primary" href="{{ url_for('main.index') }}">New scan</a></div>
+<div class="surface-card p-3 p-lg-4"><div class="d-flex flex-column flex-md-row justify-content-between gap-3 mb-3"><div><h2 class="h5 fw-bold mb-1">All recent scans</h2><p class="small text-secondary mb-0">Showing up to 200 records, newest first.</p></div><input type="search" class="form-control form-control-sm table-search" placeholder="Search URL or status…" data-table-search="historyTable" aria-label="Search scan history"></div>
+<div class="table-responsive"><table id="historyTable" class="table table-hover align-middle data-table" data-enhance-table><thead><tr><th data-sort-type="number">Scan ID</th><th data-sort-type="text">Website</th><th data-sort-type="text">Created (UTC)</th><th data-sort-type="text">Status</th><th data-sort-type="number">Success</th><th data-sort-type="number">Failed</th><th></th></tr></thead><tbody>
+{% for scan in scans %}<tr><td>#{{ scan.id }}</td><td class="url-cell">{{ scan.normalized_start_url }}</td><td>{{ scan.created_at.strftime('%Y-%m-%d %H:%M:%S') }}</td><td><span class="status-pill status-{{ scan.status }}">{{ scan.status }}</span></td><td>{{ scan.successful_pages }}</td><td>{{ scan.failed_pages }}</td><td><a class="btn btn-sm btn-outline-primary" href="{{ url_for('main.scan_results', scan_id=scan.id) }}">Open report</a></td></tr>{% else %}<tr><td colspan="7" class="text-center text-secondary py-5">No scans have been saved yet. Start by analyzing a website.</td></tr>{% endfor %}
+</tbody></table></div><div class="table-footer" data-table-footer="historyTable"></div></div>
+{% endblock %}

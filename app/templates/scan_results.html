@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}Scan #{{ scan.id }} results{% endblock %}
+{% block content %}
+<div class="page-header mb-4">
+  <div><a href="{{ url_for('main.index') }}" class="back-link">← New scan</a><div class="eyebrow mt-3">SCAN #{{ scan.id }} · {{ scan.created_at.strftime('%Y-%m-%d %H:%M') }} UTC</div><h1 class="h2 fw-bold mt-1">Website scan results</h1><div class="text-secondary url-wrap">{{ scan.normalized_start_url }}</div></div>
+  <div class="d-flex flex-wrap gap-2"><a class="btn btn-outline-secondary" href="{{ url_for('main.export_csv', scan_id=scan.id, kind='summary') }}">Export summary CSV</a><a class="btn btn-primary" href="{{ url_for('main.export_csv', scan_id=scan.id, kind='pages') }}">Export pages CSV</a></div>
+</div>
+{% if scan.error_message %}<div class="alert alert-warning">{{ scan.error_message }}</div>{% endif %}
+<div class="d-flex flex-wrap gap-2 mb-4 report-tabs"><a class="active" href="{{ url_for('main.scan_results', scan_id=scan.id) }}">Overview</a><a href="{{ url_for('main.seo_report', scan_id=scan.id) }}">SEO report</a><a href="{{ url_for('main.link_report', scan_id=scan.id) }}">Link analysis</a></div>
+<div class="row g-3 mb-4">
+  <div class="col-6 col-xl-3"><div class="metric-card"><div class="metric-label">Pages discovered</div><div class="metric-value">{{ scan.discovered_pages }}</div><div class="metric-note">Within crawl limits</div></div></div>
+  <div class="col-6 col-xl-3"><div class="metric-card"><div class="metric-label">Successfully analyzed</div><div class="metric-value text-success">{{ scan.successful_pages }}</div><div class="metric-note">HTTP 2xx–3xx with parsed HTML</div></div></div>
+  <div class="col-6 col-xl-3"><div class="metric-card"><div class="metric-label">Failed pages</div><div class="metric-value {% if scan.failed_pages %}text-danger{% endif %}">{{ scan.failed_pages }}</div><div class="metric-note">Errors, blocked, or HTTP failures</div></div></div>
+  <div class="col-6 col-xl-3"><div class="metric-card"><div class="metric-label">SEO findings</div><div class="metric-value">{{ seo_issues }}</div><div class="metric-note">Informational checks across analyzed pages</div></div></div>
+</div>
+<div class="surface-card p-4 mb-4">
+  <div class="d-flex flex-column flex-md-row justify-content-between gap-2 mb-3"><div><div class="eyebrow">STARTING PAGE ONLY</div><h2 class="h5 fw-bold mt-1 mb-1">Homepage snapshot</h2><p class="small text-secondary mb-0">Metrics below describe the submitted starting URL, not the whole crawl.</p></div>{% if homepage %}<a class="btn btn-sm btn-outline-primary align-self-start" href="{{ url_for('main.page_details', page_id=homepage.id) }}">Open homepage details</a>{% endif %}</div>
+  {% if homepage %}
+  <div class="row g-3"><div class="col-md-6 col-xl-3"><div class="mini-stat"><span>Homepage HTTP status</span><strong>{{ homepage.status_code if homepage.status_code is not none else 'Unknown' }}</strong></div></div><div class="col-md-6 col-xl-3"><div class="mini-stat"><span>Homepage title</span><strong class="fs-6">{{ homepage.page_title or 'Missing' }}</strong></div></div><div class="col-md-6 col-xl-3"><div class="mini-stat"><span>Homepage words</span><strong>{{ homepage.word_count }}</strong></div></div><div class="col-md-6 col-xl-3"><div class="mini-stat"><span>Homepage internal / external links</span><strong>{{ homepage.internal_link_count }} / {{ homepage.external_link_count }}</strong></div></div></div>
+  {% else %}<p class="text-secondary mb-0">The starting URL was not recorded as a page result. See failed-page details and scan messages.</p>{% endif %}
+</div>
+<div class="row g-3 mb-4">
+  <div class="col-lg-7"><div class="surface-card p-4 h-100"><div class="d-flex justify-content-between mb-3"><div><h2 class="h5 fw-bold mb-1">HTTP status distribution</h2><p class="small text-secondary mb-0">Whole-crawl results</p></div><span class="subtle-icon">▥</span></div><div class="chart-wrap"><canvas id="statusChart" data-labels='{{ status_labels|tojson }}' data-values='{{ status_values|tojson }}' aria-label="HTTP status distribution"></canvas></div></div></div>
+  <div class="col-lg-5"><div class="surface-card p-4 h-100"><h2 class="h5 fw-bold mb-1">Missing SEO metadata</h2><p class="small text-secondary mb-3">Successfully analyzed pages</p><div class="chart-wrap"><canvas id="seoChart" data-labels='{{ ["Title", "Meta description", "H1"]|tojson }}' data-values='{{ [seo.pages_missing_title, seo.pages_missing_description, seo.pages_missing_h1]|tojson }}' aria-label="Missing SEO metadata"></canvas></div><div class="small text-secondary mt-3">Duplicate titles: <strong>{{ seo.duplicate_titles }}</strong> · Duplicate descriptions: <strong>{{ seo.duplicate_descriptions }}</strong></div></div></div>
+</div>
+<div class="row g-3 mb-4">
+  <div class="col-md-3"><div class="mini-stat"><span>Internal links</span><strong>{{ internal_links }}</strong></div></div>
+  <div class="col-md-3"><div class="mini-stat"><span>External links</span><strong>{{ external_links }}</strong></div></div>
+  <div class="col-md-3"><div class="mini-stat"><span>Checked broken links</span><strong>{{ broken_links }}</strong></div></div>
+  <div class="col-md-3"><div class="mini-stat"><span>Scan status</span><strong>{{ scan.status|title }}</strong></div></div>
+</div>
+<div class="surface-card p-3 p-lg-4">
+  <div class="d-flex flex-column flex-md-row justify-content-between gap-3 mb-3"><div><h2 class="h5 fw-bold mb-1">Page-by-page analysis</h2><p class="small text-secondary mb-0">Homepage and discovered pages are listed together below.</p></div><div class="d-flex flex-wrap gap-2"><input type="search" class="form-control form-control-sm table-search" placeholder="Search URLs or titles…" data-table-search="pagesTable" aria-label="Search pages"><select class="form-select form-select-sm table-filter" data-table-filter="pagesTable" aria-label="Filter status"><option value="">All statuses</option><option value="2">2xx success</option><option value="3">3xx redirects</option><option value="4">4xx client errors</option><option value="5">5xx server errors</option><option value="unknown">Unknown / skipped</option></select></div></div>
+  <div class="table-responsive"><table class="table table-hover align-middle data-table" id="pagesTable" data-enhance-table><thead><tr><th data-sort-type="text">URL</th><th data-sort-type="number">Status</th><th data-sort-type="text">Page title</th><th data-sort-type="number">Words</th><th data-sort-type="number">SEO findings</th><th>Details</th></tr></thead><tbody>
+  {% for page in pages %}<tr data-status-group="{{ (page.status_code|string)[0] if page.status_code is not none else 'unknown' }}"><td class="url-cell"><a href="{{ url_for('main.page_details', page_id=page.id) }}">{{ page.requested_url }}</a></td><td>{% if page.status_code is not none %}<span class="status-code status-code-{{ (page.status_code|string)[0] }}">{{ page.status_code }}</span>{% else %}<span class="status-code status-code-unknown">—</span>{% endif %}</td><td>{{ page.page_title or '—' }}{% if page.error_message %}<div class="small text-danger">{{ page.error_message }}</div>{% endif %}</td><td>{{ page.word_count }}</td><td><span class="count-badge {% if page.seo_findings|length %}count-badge-warning{% endif %}">{{ page.seo_findings|length }}</span></td><td><a class="btn btn-sm btn-light" href="{{ url_for('main.page_details', page_id=page.id) }}">View</a></td></tr>{% else %}<tr><td colspan="6" class="text-center text-secondary py-5">No page results were stored for this scan.</td></tr>{% endfor %}
+  </tbody></table></div><div class="table-footer" data-table-footer="pagesTable"></div>
+</div>
+{% endblock %}

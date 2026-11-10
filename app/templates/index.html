@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block title %}Analyze a website{% endblock %}
+{% block content %}
+<section class="hero-panel p-4 p-lg-5 mb-5">
+  <div class="row align-items-center g-4">
+    <div class="col-lg-7">
+      <div class="eyebrow">WEBSITE ANALYTICS WORKBENCH</div>
+      <h1 class="display-5 fw-bold mt-2">Understand what’s on your website.</h1>
+      <p class="lead text-secondary mt-3">Inspect accessible pages, SEO metadata, links, content structure, and basic server response information in one clear report.</p>
+      <div class="d-flex flex-wrap gap-3 mt-4 text-secondary small"><span>✓ Bounded crawl</span><span>✓ SEO checks</span><span>✓ CSV reports</span><span>✓ Local scan history</span></div>
+    </div>
+    <div class="col-lg-5">
+      <div class="scan-form-card">
+        <h2 class="h4 fw-bold mb-1">Start a new scan</h2>
+        <p class="text-secondary small mb-4">Enter a publicly accessible HTTP or HTTPS website.</p>
+        <form method="post" action="{{ url_for('main.start_scan') }}" id="scanForm">
+          <label for="websiteUrl" class="form-label fw-semibold">Website URL</label>
+          <input class="form-control form-control-lg" id="websiteUrl" name="url" type="url" placeholder="https://example.com" required maxlength="2048" autocomplete="url">
+          <div class="form-text mb-3">Only public hosts on standard web ports (80/443) are allowed.</div>
+          <div class="form-check mb-3">
+            <input class="form-check-input" type="checkbox" value="on" id="checkLinks" name="check_links">
+            <label class="form-check-label" for="checkLinks">Check a bounded sample of links (slower)</label>
+          </div>
+          <button class="btn btn-primary btn-lg w-100" type="submit" id="scanSubmit"><span class="button-label">Analyze website</span><span class="spinner-border spinner-border-sm ms-2 d-none" id="scanSpinner" aria-hidden="true"></span></button>
+          <p class="small text-muted mt-3 mb-0">Use this only for websites you are authorized to inspect. The crawler follows robots.txt and may not discover every page.</p>
+        </form>
+      </div>
+    </div>
+  </div>
+</section>
+<section class="mb-5">
+  <div class="section-heading mb-3"><div><div class="eyebrow">WHAT YOU GET</div><h2 class="h3 fw-bold mt-1">A useful snapshot, not guesswork</h2></div></div>
+  <div class="row g-3">
+    <div class="col-md-4"><div class="feature-card h-100"><div class="feature-icon">↗</div><h3 class="h5">Page discovery</h3><p class="text-secondary mb-0">Follow internal links within configured depth and page limits while checking crawl rules.</p></div></div>
+    <div class="col-md-4"><div class="feature-card h-100"><div class="feature-icon">⌕</div><h3 class="h5">SEO and content</h3><p class="text-secondary mb-0">Review titles, descriptions, headings, image alt attributes, canonical tags, and readable text counts.</p></div></div>
+    <div class="col-md-4"><div class="feature-card h-100"><div class="feature-icon">▤</div><h3 class="h5">Reports and history</h3><p class="text-secondary mb-0">Save scan results to SQLite, compare previous scans, and export page, link, SEO, and summary CSV files.</p></div></div>
+  </div>
+</section>
+{% if recent_scans %}
+<section>
+  <div class="d-flex justify-content-between align-items-end mb-3"><div><div class="eyebrow">RECENT ACTIVITY</div><h2 class="h4 fw-bold mt-1">Recent scans</h2></div><a href="{{ url_for('main.history') }}" class="text-decoration-none">View history →</a></div>
+  <div class="table-responsive surface-card"><table class="table align-middle mb-0"><thead><tr><th>Website</th><th>Scanned at (UTC)</th><th>Status</th><th>Pages</th><th></th></tr></thead><tbody>
+  {% for scan in recent_scans %}<tr><td class="url-cell">{{ scan.normalized_start_url }}</td><td>{{ scan.created_at.strftime('%Y-%m-%d %H:%M') }}</td><td><span class="status-pill status-{{ scan.status }}">{{ scan.status }}</span></td><td>{{ scan.successful_pages }} / {{ scan.discovered_pages }}</td><td><a class="btn btn-sm btn-outline-primary" href="{{ url_for('main.scan_results', scan_id=scan.id) }}">Open</a></td></tr>{% endfor %}
+  </tbody></table></div>
+</section>
+{% endif %}
+{% endblock %}
